@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap">
+<script src="https://download.affectiva.com/js/3.2.1/affdex.js"></script>
+
+    <!-- Initializing document elements and formatting style -->
+    <title>Affective MP3</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #1C2621;
+            color: #F2F0D5;
+        }
+
+        .control-center {
+            background-color: #ccc;
+            padding: 10px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        #title {
+            font-family: 'Pacifico', cursive;
+            color: #D97652;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+
+        #songInfoContainer {
+            font-family: Roboto, sans-serif;
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        
+
+    </style>
+</head>
+<!-- Initializing control panel elements -->
+<body>
+    
+    <h1 id="title">Affective MP3</h1>
+    <button id="recalibrate">Calibrate</button>
+    <button id="wrongVibe">Wrong Vibe</button>
+    <button id="pause">Pause</button>
+    <button id="nextSong">Next Song</button>
+    <canvas id="canvas" width="1400" height="750"></canvas>
+    <div id="songInfoContainer"></div>
+    
+    <script>
+
+        class Model {
+            // initializes HTML elements, member variables to handle 
+            // program logic, and main data structures
+            constructor() {
+        
+                this.ranked_emotions = [{name: "Happy", value: 0},
+                                        {name: "Sad", value: 0},
+                                        {name: "Angry", value: 0},
+                                        {name: "Romantic", value: 0},
+                                        {name: "Instrumental", value: 0}];
+
+                this.happyPlaylist = [
+                    {song: new Audio('happy.mp3'), 
+                        name: 'Happy', 
+                        artist: 'Pharell Williams', 
+                        album: 'G I R L', 
+                        releaseDate: 2014,
+                        vibe: 'HAPPY'},
+                    {song: new Audio('inTheSummertime.mp3'),
+                        name: 'In The Summertime',
+                        artist: 'Mungo Jerry',
+                        album: 'In The Summertime',
+                        releaseDate: 1970,
+                        vibe: 'HAPPY'},
+                    {song: new Audio('uptownGirl.mp3'), 
+                        name: 'Uptown Girl',
+                        artist: 'Billy Joel',
+                        album: 'An Innocent Man', 
+                        releaseDate: 1983, 
+                        vibe: 'HAPPY'},
+                    {song: new Audio('allStar.mp3'), 
+                        name: 'All Star', 
+                        artist: 'Smash Mouth', 
+                        album: 'Astro Lounge', 
+                        releaseDate: 1999,
+                        vibe: 'HAPPY'},
+                    {song: new Audio('watermelonSugar.mp3'),
+                        name: 'Watermelon Sugar',
+                        artist: 'Harry Styles', 
+                        album: 'Fine Line', 
+                        releaseDate: 2019, 
+                        vibe: 'HAPPY'}];
+
+                this.sadPlaylist = [
+                    {song: new Audio('theReason.mp3'), 
+                        name: 'The Reason', 
+                        artist: 'Hoobastank', 
+                        album: 'The Reason', 
+                        releaseDate: 2003,
+                        vibe: 'SAD'},
+                    {song: new Audio('tearsInHeaven.mp3'), 
+                        name: 'Tears In Heaven', 
+                        artist: 'Eric Clapton', 
+                        album: 'Rush', 
+                        releaseDate: 1992, 
+                        vibe: 'SAD'},
+                    {song: new Audio('someoneLikeYou.mp3'), 
+                        name: 'Someone Like You', 
+                        artist: 'Adele', 
+                        album: '21', 
+                        releaseDate: 2011, 
+                        vibe: 'SAD'},
+                    {song: new Audio('imNotTheOnlyOne.mp3'), 
+                        name: 'Im Not The Only One', 
+                        artist: 'Sam Smith', 
+                        album: 'In The Lonely Hour', 
+                        releaseDate: 2014, 
+                        vibe: 'SAD'},
+                    {song: new Audio('creep.mp3'), 
+                        name: 'Creep', 
+                        artist: 'Radiohead', 
+                        album: 'Pablo Honey', 
+                        releaseDate: 1993, 
+                        vibe: 'SAD'}];
+
+                this.angryPlaylist = [
+                    {song: new Audio('lastResort.mp3'), 
+                        name: 'Last Resort', 
+                        artist: 'Papa Roach', 
+                        album: 'Ready To Rumble', 
+                        releaseDate: 2000,
+                        vibe: 'ANGRY'},
+                    {song: new Audio('chopSuey.mp3'), 
+                        name: 'Chop Suey', 
+                        artist: 'System Of A Down', 
+                        album: 'Toxicity', 
+                        releaseDate: 2001, 
+                        vibe: 'ANGRY'},
+                    {song: new Audio('blakkkHistory.mp3'), 
+                        name: 'Blakkk History',
+                        artist: 'JAG', 
+                        album: 'Single',
+                        releaseDate: 2019,
+                        vibe: 'ANGRY'},
+                    {song: new Audio('act3.mp3'),
+                        name: 'Act 3',
+                        artist: 'Katori Walker',
+                        album: '1 Minute Of Your Time...',
+                        releaseDate: 2018,
+                        vibe: 'ANGRY'},
+                    {song: new Audio('goToSleep.mp3'),
+                        name: 'Go To Sleep',
+                        artist: 'Eminem, DMX, Obie Trice',
+                        album: 'Cradle 2 The Grave',
+                        releaseDate: 2003,
+                        vibe: 'ANGRY'}];
+
+                this.romanticPlaylist = [
+                    {song: new Audio('versaceOnTheFloor.mp3'),
+                        name: 'Versace On The Floor',
+                        artist: 'Bruno Mars',
+                        album: '24K Magic',
+                        releaseDate: 2016,
+                        vibe: 'ROMANTIC'},
+                    {song: new Audio('lostInJapan.mp3'),
+                        name: 'Lost In Japan',
+                        artist: 'Shawn Mendes, Zedd',
+                        album: 'Shawn Mendes',
+                        releaseDate: 2018,
+                        vibe: 'ROMANTIC'},
+                    {song: new Audio('telepatia.mp3'),
+                        name: 'Telepatia',
+                        artist: 'Kali Uchis',
+                        album: 'Sin Miedo (del Amor y Otros Demonios)',
+                        releaseDate: 2020,
+                        vibe: 'ROMANTIC'},
+                    {song: new Audio('letMe.mp3'),
+                        name: 'Let Me',
+                        artist: 'Zayn',
+                        album: 'Icarus Falls',
+                        releaseDate: 2018,
+                        vibe: 'ROMANTIC'},
+                    {song: new Audio('badBadNews.mp3'),
+                        name: 'BAD BAD News',
+                        artist: 'Tai Verdes',
+                        album: 'TV',
+                        releaseDate: 2021,
+                        vibe: 'ROMANTIC'}];
+
+                this.instrumentalPlaylist = [
+                    {song: new Audio('furElise.mp3'),
+                        name: 'Für Elise',
+                        artist: 'Ludwig Van Beethoven',
+                        album: '',
+                        releaseDate: 1810,
+                        vibe: 'INSTRUMENTAL'},
+                    {song: new Audio('bistroFada.mp3'),
+                        name: 'Bistro Fada',
+                        artist: 'Stephane Wrembel',
+                        album: 'Midnight In Paris',
+                        releaseDate: 2011,
+                        vibe: 'INSTRUMENTAL'},
+                    {song: new Audio('theWayOfTheGhost.mp3'), 
+                        name: 'The Way Of The Ghost',
+                        artist: 'Ilan Eshkeri',
+                        album: 'Ghost Of Tsushima',
+                        releaseDate: 2020,
+                        vibe: 'INSTRUMENTAL'},
+                    {song: new Audio('yeah.mp3'),
+                        name: 'Yeah',
+                        artist: 'itsDB',
+                        album: 'Single',
+                        releaseDate: 2023,
+                        vibe: 'INSTRUMENTAL'},
+                    {song: new Audio('grebFruit.mp3'),
+                        name: 'Grebfruit',
+                        artist: 'Benny Greb',
+                        album: 'Grebfruit',
+                        releaseDate: 2005,
+                        vibe: 'INSTRUMENTAL'}];
+
+                this.currVibe = this.ranked_emotions[0].name;
+                this.currPlaylist = this.happyPlaylist;
+                this.errorCounter = 0;
+                this.currPaused = true;
+                this.currSongIndex = 0;
+
+                this.control_center = document.getElementById('control_center');
+                this.recalibrate = document.getElementById('recalibrate');
+                this.wrongVibe = document.getElementById('wrongVibe');
+                this.wrongVibe.disabled = true
+                this.pause = document.getElementById('pause');
+                this.pause.disabled = true
+                this.nextSong = document.getElementById('nextSong');
+                this.nextSong.disabled = true
+                this.canvas = document.getElementById('canvas');
+            }
+
+            // Handles face scanning before initiating Music Playing
+            initializeAffectiva() {
+                this.errorCounter = 0;
+                let detectorCounter = 0;
+                this.currPlaylist[this.currSongIndex].song.pause();
+                this.currPlaylist[this.currSongIndex].song.currentTime = 0;
+                this.currSongIndex = Math.floor(Math.random() * 5);
+                this.ranked_emotions = [{name: "Happy", value: 0},
+                                        {name: "Sad", value: 0},
+                                        {name: "Angry", value: 0},
+                                        {name: "Romantic", value: 0},
+                                        {name: "Instrumental", value: 0}];
+                
+
+                // Initializes Affectiva Detector
+                let detector = new affdex.CameraDetector(this.canvas);
+                detector.detectAllExpressions();
+                detector.addEventListener("onImageResultsSuccess",
+                (faces, image, timestamp) => {
+    
+                    // processes 100 facial data inputs
+                    if ((faces.length > 0) && (detectorCounter < 100)) {
+                        detectorCounter++;
+                        this.faceProcessor(faces[0], image);
+                    }
+                    
+                    // sorts 5 vibes and plays music once facial data is 
+                    // collected, 
+                    if (detectorCounter == 100) {
+                        // console.log("Ranked Vibe:", this.ranked_emotions[0].name);
+                        detector.removeEventListener();
+                        detector.stop();
+
+                        this.ranked_emotions.sort((a, b) => b.value - a.value);
+                        this.currVibe = this.ranked_emotions[0].name;
+
+                        this.wrongVibe.disabled = false;
+                        this.pause.disabled = false;
+                        this.nextSong.disabled = false;
+                        this.MusicPlayer();
+                    }
+                });
+            
+                detector.start();
+            }
+
+            // Interprets facial input and increments appropriate vibe in 
+            // ranked_emotions
+            faceProcessor(face, image) {
+
+                let expressions = face.expressions;
+
+                let happiness = {
+                    name: "Happy",
+                    value: expressions.smile
+                };
+                let sadness = {
+                    name: "Sad", 
+                    value: expressions.mouthOpen
+                };
+                let anger = {
+                    name: "Angry",
+                    value: expressions.noseWrinkle
+                };
+                let romance = {
+                    name: "Romantic",
+                    value: expressions.lipPucker
+                };
+                let instrumental = {
+                    name: "Instrumental", 
+                    value: expressions.lipStretch
+                };
+
+                let vibeArray = [happiness, sadness, anger, 
+                                    romance, instrumental];
+
+                let maxIndex = -1;
+                let maxValue = -1;
+
+                for (let i = 0; i < 5; i++) {
+                    if (vibeArray[i].value > maxValue) {
+                        maxIndex = i;
+                        maxValue = vibeArray[i].value;
+                    }
+                }
+
+                this.ranked_emotions[maxIndex].value++;
+
+                songInfoContainer.innerHTML = 
+                    `<p>Are you feeling <i>${vibeArray[maxIndex].name}</i>?</p>`;
+                // console.log("Max Vibe:", vibeArray[maxIndex].name);
+            }
+
+            // Handles logic for playing correct music and displaying music info
+            MusicPlayer() {
+                if (this.currVibe == "Happy") {
+                    this.currPlaylist = this.happyPlaylist;
+
+                } else if (this.currVibe == "Sad") {
+                    this.currPlaylist = this.sadPlaylist;
+
+                } else if (this.currVibe == "Angry") {
+                    this.currPlaylist = this.angryPlaylist;
+
+                } else if (this.currVibe == "Romantic") {
+                    this.currPlaylist = this.romanticPlaylist;
+
+                } else if (this.currVibe == "Instrumental") {
+                    this.currPlaylist = this.instrumentalPlaylist;
+
+                }
+
+                this.currPaused = false;
+                this.pause.textContent = 'Pause';
+                this.currPlaylist[this.currSongIndex].song.play();
+                
+                let songInfoContainer = 
+                    document.getElementById('songInfoContainer');
+                
+                songInfoContainer.innerHTML = 
+                    `<p><i>${this.currPlaylist[this.currSongIndex].name}</i></p>
+                    <p>${this.currPlaylist[this.currSongIndex].artist}</p>
+                    <p><i>${this.currPlaylist[this.currSongIndex].album}</i></p>
+                    <p>${this.currPlaylist[this.currSongIndex].releaseDate}</p>
+                    <p>${this.currPlaylist[this.currSongIndex].vibe}</p>`;
+            }
+                
+        
+
+        // Performs appropriate response to user interaction
+            actionPerformed(e) {
+                if (e.target == this.recalibrate) {
+                    this.recalibrate.textContent = 'Recalibrate';
+                    this.initializeAffectiva();
+                }
+                // Handles different behaviors based upon number of errors made
+                else if (e.target == this.wrongVibe) {
+                    if (this.errorCounter == 0) {
+                        this.currVibe = this.ranked_emotions[1].name;
+                        this.errorCounter++
+                        this.currPlaylist[this.currSongIndex].song.pause();
+                        this.currPlaylist[this.currSongIndex].song.currentTime = 0;
+                        this.MusicPlayer()
+                    } else {
+                        this.initializeAffectiva()
+                    }
+                    
+                }
+                else if (e.target == this.pause) {
+                    if (this.currPaused) {
+                        this.currPaused = false;
+                        this.pause.textContent = 'Pause';
+                        this.currPlaylist[this.currSongIndex].song.play()}
+                    else {
+                        this.currPaused = true;
+                        this.pause.textContent = 'Play';
+                        this.currPlaylist[this.currSongIndex].song.pause()
+                    }
+                }
+                else if (e.target == this.nextSong) {
+                    if (!this.currPaused) {
+                        this.currPlaylist[this.currSongIndex].song.pause()
+                        this.currPaused = true;
+                    } 
+
+                    this.currPlaylist[this.currSongIndex].song.currentTime = 0;
+
+                    let newIndex = Math.floor(Math.random() * 5);
+
+                    while (this.currSongIndex == newIndex) {
+                        newIndex = Math.floor(Math.random() * 5);
+                    }
+                    this.currSongIndex = newIndex;
+                    this.MusicPlayer()
+                }
+                }
+            }
+
+        model = new Model()
+
+        // adds event listeners to UI elements
+        document.addEventListener('input', (e) => model.actionPerformed(e));
+        model.recalibrate.addEventListener('click', () => 
+        model.actionPerformed({ target: model.recalibrate }));
+        model.wrongVibe.addEventListener('click', () => 
+        model.actionPerformed({ target: model.wrongVibe }));
+        model.pause.addEventListener('click', () => 
+        model.actionPerformed({ target: model.pause }));
+        model.nextSong.addEventListener('click', () => 
+        model.actionPerformed({ target: model.nextSong }));
+
+    </script>
+</body>
+</html>
